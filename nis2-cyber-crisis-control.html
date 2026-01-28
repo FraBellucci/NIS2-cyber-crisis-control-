@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NIS2 Cyber Crisis Control</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0f172a;
+            overflow: hidden;
+            color: white;
+            width: 800px;
+            height: 550px;
+            margin: 0 auto;
+        }
+
+        #gameContainer {
+            width: 800px;
+            height: 550px;
+            position: relative;
+        }
+
+        /* Top Action Buttons */
+        #actionButtons {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 8px;
+            z-index: 200;
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 2px solid #fbbf24;
+            color: #fbbf24;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.8em;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .action-btn:hover {
+            background: #fbbf24;
+            color: #0f172a;
+            transform: scale(1.05);
+        }
+
+        /* Start Screen */
+        #startScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        #startScreen h1 {
+            font-size: 2em;
+            margin-bottom: 15px;
+            text-shadow: 3px 3px 15px rgba(0,0,0,0.5);
+            color: #fef2f2;
+        }
+
+        #startScreen .subtitle {
+            font-size: 1em;
+            color: #fecaca;
+            margin-bottom: 15px;
+        }
+
+        #startScreen p {
+            font-size: 0.85em;
+            margin: 5px 0;
+            max-width: 650px;
+            text-align: center;
+            color: #fef2f2;
+            line-height: 1.4;
+        }
+
+        .button {
+            margin-top: 20px;
+            padding: 12px 35px;
+            font-size: 1em;
+            background: white;
+            color: #dc2626;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* HUD */
+        #hud {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .hud-panel {
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 10px 15px;
+            border-radius: 10px;
+            border: 2px solid rgba(220, 38, 38, 0.5);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        #timerPanel {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .timer-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+            font-weight: bold;
+            color: #fbbf24;
+        }
+
+        .timer-value {
+            font-size: 1.1em;
+        }
+
+        #progressPanel .progress-text {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #10b981;
+        }
+
+        .progress-label {
+            color: #94a3b8;
+            font-size: 0.7em;
+            margin-top: 2px;
+        }
+
+        /* Network Map */
+        #networkMap {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 750px;
+            height: 450px;
+        }
+
+        .node {
+            position: absolute;
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(30, 41, 59, 0.8);
+            border: 3px solid #334155;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .node:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+        }
+
+        .node-icon {
+            font-size: 1.8em;
+            margin-bottom: 3px;
+        }
+
+        .node-label {
+            font-size: 0.65em;
+            text-align: center;
+            color: #cbd5e1;
+        }
+
+        .node.alert {
+            animation: pulse 1s infinite;
+            border-color: #dc2626;
+            background: rgba(220, 38, 38, 0.3);
+            cursor: pointer;
+        }
+
+        .node.contained {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.3);
+            cursor: default;
+        }
+
+        .node.inactive {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 15px rgba(220, 38, 38, 0);
+            }
+        }
+
+        /* Question Modal */
+        #questionModal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(15, 23, 42, 0.98);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 15px;
+            border: 3px solid #dc2626;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            max-width: 600px;
+            width: 85%;
+            z-index: 500;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        #questionModal h2 {
+            color: #fbbf24;
+            margin-bottom: 12px;
+            font-size: 1.2em;
+            text-align: center;
+        }
+
+        #questionText {
+            font-size: 0.9em;
+            margin-bottom: 18px;
+            line-height: 1.4;
+            color: #e2e8f0;
+        }
+
+        .answer-option {
+            background: rgba(30, 41, 59, 0.8);
+            border: 2px solid #475569;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.85em;
+        }
+
+        .answer-option:hover {
+            background: rgba(51, 65, 85, 0.9);
+            border-color: #fbbf24;
+            transform: translateX(5px);
+        }
+
+        .answer-option.correct {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.2);
+            animation: correctFlash 0.5s;
+        }
+
+        .answer-option.wrong {
+            border-color: #dc2626;
+            background: rgba(220, 38, 38, 0.2);
+            animation: wrongShake 0.5s;
+        }
+
+        @keyframes correctFlash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes wrongShake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .answer-feedback {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.8em;
+            line-height: 1.4;
+        }
+
+        .feedback-correct {
+            background: rgba(16, 185, 129, 0.2);
+            border: 2px solid #10b981;
+            color: #d1fae5;
+        }
+
+        .feedback-wrong {
+            background: rgba(220, 38, 38, 0.2);
+            border: 2px solid #dc2626;
+            color: #fecaca;
+        }
+
+        #continueButton {
+            display: block;
+            margin: 15px auto 0;
+            padding: 10px 30px;
+            background: #fbbf24;
+            color: #0f172a;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        #continueButton:hover {
+            background: #f59e0b;
+            transform: scale(1.05);
+        }
+
+        /* End Screen */
+        #endScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.98);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        #endScreen h1 {
+            font-size: 1.8em;
+            margin-bottom: 15px;
+        }
+
+        .result-excellent {
+            color: #10b981;
+        }
+
+        .result-good {
+            color: #fbbf24;
+        }
+
+        .result-poor {
+            color: #f97316;
+        }
+
+        .result-failed {
+            color: #dc2626;
+        }
+
+        #endScreen .stat {
+            font-size: 1.2em;
+            margin: 10px 0;
+            color: #cbd5e1;
+            font-weight: bold;
+        }
+
+        #endScreen .message {
+            max-width: 650px;
+            text-align: center;
+            font-size: 0.9em;
+            margin: 20px 0;
+            line-height: 1.5;
+            color: #94a3b8;
+            padding: 0 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <!-- Action Buttons (always visible during game) -->
+        <div id="actionButtons" class="hidden">
+            <button class="action-btn" onclick="returnToGame()">🎮 Torna al Gioco</button>
+            <button class="action-btn" onclick="location.reload()">🔄 Ricomincia</button>
+        </div>
+
+        <!-- Start Screen -->
+        <div id="startScreen">
+            <h1>⚠️ CYBER CRISIS CONTROL</h1>
+            <div class="subtitle">Gestione Incidenti NIS2</div>
+            <p><strong>SCENARIO:</strong> Un ransomware ha colpito la vostra infrastruttura IT</p>
+            <p>🎯 <strong>Obiettivo:</strong> Risolvi tutti i 6 nodi nel minor tempo possibile</p>
+            <p>⚡ Il punteggio dipende dalla velocità di risoluzione</p>
+            <p>⚠️ Le risposte sbagliate ti rallentano ma devi trovare quelle corrette!</p>
+            <button class="button" onclick="startGame()">🚨 INIZIA EMERGENZA</button>
+        </div>
+
+        <!-- HUD -->
+        <div id="hud" class="hidden">
+            <div class="hud-panel" id="timerPanel">
+                <div class="timer-item">
+                    ⏱️ <span class="timer-value"><span id="hoursDisplay">0</span>h</span>
+                </div>
+            </div>
+            
+            <div class="hud-panel" id="progressPanel">
+                <div class="progress-text"><span id="progressDisplay">0</span>/6</div>
+                <div class="progress-label">Nodi risolti</div>
+            </div>
+        </div>
+
+        <!-- Network Map -->
+        <div id="networkMap" class="hidden">
+            <!-- Server -->
+            <div class="node alert" id="node-server" style="left: 20%; top: 30%;" onclick="handleNode('server')">
+                <div class="node-icon">🖥️</div>
+                <div class="node-label">Server Room</div>
+            </div>
+
+            <!-- Database -->
+            <div class="node inactive" id="node-database" style="left: 45%; top: 20%;" onclick="handleNode('database')">
+                <div class="node-icon">💾</div>
+                <div class="node-label">Database</div>
+            </div>
+
+            <!-- Backup -->
+            <div class="node inactive" id="node-backup" style="left: 70%; top: 30%;" onclick="handleNode('backup')">
+                <div class="node-icon">💿</div>
+                <div class="node-label">Backup System</div>
+            </div>
+
+            <!-- Network -->
+            <div class="node inactive" id="node-network" style="left: 20%; top: 65%;" onclick="handleNode('network')">
+                <div class="node-icon">🌐</div>
+                <div class="node-label">Network</div>
+            </div>
+
+            <!-- Cloud -->
+            <div class="node inactive" id="node-cloud" style="left: 45%; top: 70%;" onclick="handleNode('cloud')">
+                <div class="node-icon">☁️</div>
+                <div class="node-label">Cloud Services</div>
+            </div>
+
+            <!-- Endpoint -->
+            <div class="node inactive" id="node-endpoint" style="left: 70%; top: 65%;" onclick="handleNode('endpoint')">
+                <div class="node-icon">💻</div>
+                <div class="node-label">Endpoints</div>
+            </div>
+        </div>
+
+        <!-- Question Modal -->
+        <div id="questionModal" class="hidden">
+            <h2 id="nodeName"></h2>
+            <div id="questionText"></div>
+            <div id="answersContainer"></div>
+            <div id="feedbackContainer"></div>
+            <button id="continueButton" class="hidden" onclick="continueGame()">Continua</button>
+        </div>
+
+        <!-- End Screen -->
+        <div id="endScreen" class="hidden">
+            <h1 id="endTitle"></h1>
+            <div class="stat">⏱️ Tempo: <span id="finalTime"></span> ore</div>
+            <div class="stat">🏆 Punteggio: <span id="finalScore"></span>/100</div>
+            <div class="message" id="endMessage"></div>
+            <button class="button" onclick="location.reload()">Gioca Ancora</button>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        let gameState = {
+            hours: 0,
+            timer: null,
+            currentNode: null,
+            solvedNodes: [],
+            nodeSequence: ['server', 'database', 'backup', 'network', 'cloud', 'endpoint']
+        };
+
+        // Questions Database
+        const questions = {
+            server: {
+                name: '🖥️ SERVER ROOM - Ransomware Attivo',
+                question: 'Il ransomware sta criptando i file sui server. Quale è la PRIMA azione immediata?',
+                answers: [
+                    { 
+                        text: 'A) Spegni tutto immediatamente', 
+                        correct: false, 
+                        feedback: '❌ Spegnere tutto può far perdere evidenze forensi e RAM volatile necessarie per l\'indagine. Non è la prima azione corretta.'
+                    },
+                    { 
+                        text: 'B) Isola i server dalla rete', 
+                        correct: true, 
+                        feedback: '✅ CORRETTO! Isolare dalla rete è la prima azione per contenere la propagazione del ransomware, preservando le evidenze.'
+                    },
+                    { 
+                        text: 'C) Prova a decriptare i file', 
+                        correct: false, 
+                        feedback: '❌ Tentare di decriptare senza aver contenuto l\'attacco è prematuro. Prima va contenuta la minaccia.'
+                    }
+                ]
+            },
+            database: {
+                name: '💾 DATABASE - Notifica Obbligatoria',
+                question: 'Entro quanto tempo devi inviare la notifica di early warning a CSIRT Italia?',
+                answers: [
+                    { 
+                        text: 'A) Entro 1 ora', 
+                        correct: false, 
+                        feedback: '❌ Non esiste obbligo di notifica entro 1 ora. Il D.Lgs 138/2024 prevede tempistiche diverse.'
+                    },
+                    { 
+                        text: 'B) Entro 24 ore', 
+                        correct: true, 
+                        feedback: '✅ CORRETTO! L\'early warning deve essere inviato entro 24 ore (Art. 27 D.Lgs 138/2024).'
+                    },
+                    { 
+                        text: 'C) Entro 72 ore', 
+                        correct: false, 
+                        feedback: '❌ 72 ore è per la notifica completa, non per l\'early warning che richiede maggiore tempestività.'
+                    }
+                ]
+            },
+            backup: {
+                name: '💿 BACKUP - Governance',
+                question: 'Chi deve approvare formalmente la notifica dell\'incidente?',
+                answers: [
+                    { 
+                        text: 'A) Il CISO', 
+                        correct: false, 
+                        feedback: '❌ Il CISO prepara ma non ha l\'autorità finale. NIS2 stabilisce responsabilità a livello più alto.'
+                    },
+                    { 
+                        text: 'B) L\'organo amministrativo (Board)', 
+                        correct: true, 
+                        feedback: '✅ CORRETTO! NIS2 stabilisce responsabilità diretta degli organi di gestione per la cybersecurity.'
+                    },
+                    { 
+                        text: 'C) Il responsabile IT', 
+                        correct: false, 
+                        feedback: '❌ L\'IT gestisce gli aspetti tecnici ma la governance spetta al management.'
+                    }
+                ]
+            },
+            network: {
+                name: '🌐 NETWORK - Comunicazione',
+                question: 'Quando è obbligatorio informare i clienti dell\'incidente?',
+                answers: [
+                    { 
+                        text: 'A) Sempre, immediatamente', 
+                        correct: false, 
+                        feedback: '❌ Non c\'è obbligo di comunicazione immediata indiscriminata. Dipende dall\'impatto.'
+                    },
+                    { 
+                        text: 'B) Solo se richiesto da ACN', 
+                        correct: false, 
+                        feedback: '❌ L\'obbligo non dipende solo dalla richiesta delle autorità.'
+                    },
+                    { 
+                        text: 'C) Se compromette i loro servizi/dati', 
+                        correct: true, 
+                        feedback: '✅ CORRETTO! Devi informare se l\'incidente impatta significativamente i servizi o dati dei clienti.'
+                    }
+                ]
+            },
+            cloud: {
+                name: '☁️ CLOUD - Supply Chain',
+                question: 'Il ransomware potrebbe venire da un fornitore cloud. Cosa fai?',
+                answers: [
+                    { 
+                        text: 'A) Aspetti che il fornitore notifichi', 
+                        correct: false, 
+                        feedback: '❌ Non puoi aspettare. Sei responsabile anche per servizi in outsourcing (Art. 21 D.Lgs 138/2024).'
+                    },
+                    { 
+                        text: 'B) Notifichi + richiedi incident report al fornitore', 
+                        correct: true, 
+                        feedback: '✅ CORRETTO! Devi notificare il TUO incidente e richiedere report. La responsabilità non è delegabile.'
+                    },
+                    { 
+                        text: 'C) Non notifichi, è colpa del fornitore', 
+                        correct: false, 
+                        feedback: '❌ Grave errore! Sei responsabile anche per incidenti originati da terze parti.'
+                    }
+                ]
+            },
+            endpoint: {
+                name: '💻 ENDPOINTS - Business Continuity',
+                question: 'Dopo 48h alcuni sistemi sono down. Cosa prevede NIS2?',
+                answers: [
+                    { 
+                        text: 'A) Puoi aspettare il restore completo', 
+                        correct: false, 
+                        feedback: '❌ NIS2 richiede piani di business continuity per minimizzare i downtime.'
+                    },
+                    { 
+                        text: 'B) Attivi disaster recovery per servizi critici', 
+                        correct: true, 
+                        feedback: '✅ CORRETTO! NIS2 richiede misure di BC/DR (Art. 23) per garantire continuità servizi essenziali.'
+                    },
+                    { 
+                        text: 'C) Comunichi solo quando tutto è risolto', 
+                        correct: false, 
+                        feedback: '❌ Devi inviare aggiornamenti intermedi e relazione finale entro 1 mese.'
+                    }
+                ]
+            }
+        };
+
+        function startGame() {
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('hud').classList.remove('hidden');
+            document.getElementById('networkMap').classList.remove('hidden');
+            document.getElementById('actionButtons').classList.remove('hidden');
+
+            // Start timer (1 second = 1 hour)
+            gameState.timer = setInterval(() => {
+                gameState.hours++;
+                document.getElementById('hoursDisplay').textContent = gameState.hours;
+            }, 1000);
+        }
+
+        function handleNode(nodeId) {
+            const nodeEl = document.getElementById(`node-${nodeId}`);
+            
+            // Check if node is inactive or already solved
+            if (nodeEl.classList.contains('inactive') || gameState.solvedNodes.includes(nodeId)) {
+                return;
+            }
+
+            gameState.currentNode = nodeId;
+            const question = questions[nodeId];
+
+            document.getElementById('nodeName').textContent = question.name;
+            document.getElementById('questionText').textContent = question.question;
+            
+            const container = document.getElementById('answersContainer');
+            container.innerHTML = '';
+            document.getElementById('feedbackContainer').innerHTML = '';
+            document.getElementById('continueButton').classList.add('hidden');
+
+            question.answers.forEach((answer, index) => {
+                const option = document.createElement('div');
+                option.className = 'answer-option';
+                option.textContent = answer.text;
+                option.onclick = () => selectAnswer(index, nodeId);
+                container.appendChild(option);
+            });
+
+            document.getElementById('questionModal').classList.remove('hidden');
+        }
+
+        function selectAnswer(index, nodeId) {
+            const question = questions[nodeId];
+            const answer = question.answers[index];
+            const options = document.querySelectorAll('.answer-option');
+
+            // Disable all options temporarily
+            options.forEach(opt => opt.style.pointerEvents = 'none');
+
+            // Mark selected answer
+            options[index].classList.add(answer.correct ? 'correct' : 'wrong');
+
+            // Show feedback
+            const feedbackDiv = document.createElement('div');
+            feedbackDiv.className = `answer-feedback ${answer.correct ? 'feedback-correct' : 'feedback-wrong'}`;
+            feedbackDiv.textContent = answer.feedback;
+            document.getElementById('feedbackContainer').appendChild(feedbackDiv);
+
+            if (answer.correct) {
+                // Correct answer - node solved!
+                gameState.solvedNodes.push(nodeId);
+                document.getElementById(`node-${nodeId}`).classList.remove('alert');
+                document.getElementById(`node-${nodeId}`).classList.add('contained');
+                
+                updateProgress();
+                
+                // Show continue button
+                document.getElementById('continueButton').classList.remove('hidden');
+            } else {
+                // Wrong answer - close modal after feedback
+                setTimeout(() => {
+                    document.getElementById('questionModal').classList.add('hidden');
+                }, 2000);
+            }
+            
+            // Activate next node ALWAYS (both correct and wrong answers)
+            setTimeout(() => {
+                const currentSequencePosition = gameState.nodeSequence.indexOf(nodeId);
+                const nextNodeIndex = currentSequencePosition + 1;
+                
+                if (nextNodeIndex < gameState.nodeSequence.length) {
+                    const nextNodeId = gameState.nodeSequence[nextNodeIndex];
+                    const nextNode = document.getElementById(`node-${nextNodeId}`);
+                    if (nextNode && !nextNode.classList.contains('alert') && !nextNode.classList.contains('contained')) {
+                        nextNode.classList.remove('inactive');
+                        nextNode.classList.add('alert');
+                    }
+                }
+            }, 2000);
+        }
+
+        function continueGame() {
+            document.getElementById('questionModal').classList.add('hidden');
+
+            // Check if game is complete
+            if (gameState.solvedNodes.length === 6) {
+                endGame();
+                return;
+            }
+
+            // Activate next node in sequence
+            const nextNodeIndex = gameState.solvedNodes.length;
+            if (nextNodeIndex < gameState.nodeSequence.length) {
+                const nextNodeId = gameState.nodeSequence[nextNodeIndex];
+                document.getElementById(`node-${nextNodeId}`).classList.remove('inactive');
+                document.getElementById(`node-${nextNodeId}`).classList.add('alert');
+            }
+        }
+
+        function updateProgress() {
+            document.getElementById('progressDisplay').textContent = gameState.solvedNodes.length;
+        }
+
+        function returnToGame() {
+            document.getElementById('questionModal').classList.add('hidden');
+        }
+
+        function endGame() {
+            clearInterval(gameState.timer);
+
+            document.getElementById('hud').classList.add('hidden');
+            document.getElementById('networkMap').classList.add('hidden');
+            document.getElementById('questionModal').classList.add('hidden');
+            document.getElementById('actionButtons').classList.add('hidden');
+            document.getElementById('endScreen').classList.remove('hidden');
+
+            const hours = gameState.hours;
+            const endTitle = document.getElementById('endTitle');
+            const endMessage = document.getElementById('endMessage');
+
+            document.getElementById('finalTime').textContent = hours;
+
+            // Calculate score based on time (max 100)
+            let score = 100;
+            if (hours <= 24) {
+                score = 100;
+                endTitle.textContent = '🏆 ECCELLENTE - Gestione Rapida';
+                endTitle.className = 'result-excellent';
+                endMessage.textContent = 'Outstanding! Hai risolto l\'incidente in meno di 24 ore rispettando tutti gli obblighi NIS2. Tempestività impeccabile!';
+            } else if (hours <= 48) {
+                score = 85;
+                endTitle.textContent = '✅ OTTIMO - Risposta Efficace';
+                endTitle.className = 'result-good';
+                endMessage.textContent = 'Molto bene! Hai gestito l\'incidente entro 48 ore con procedure corrette. Ottima conformità NIS2.';
+            } else if (hours <= 72) {
+                score = 70;
+                endTitle.textContent = '⚠️ BUONO - Gestione Accettabile';
+                endTitle.className = 'result-poor';
+                endMessage.textContent = 'Hai rispettato la deadline di 72h per la notifica completa, ma potresti migliorare la velocità di risposta.';
+            } else {
+                score = 50;
+                endTitle.textContent = '❌ LENTO - Violazioni Temporali';
+                endTitle.className = 'result-failed';
+                endMessage.textContent = 'Tempi troppo lunghi! Hai superato le 72 ore previste per la notifica completa. Rischio sanzioni ACN per ritardi.';
+            }
+
+            document.getElementById('finalScore').textContent = score;
+        }
+    </script>
+</body>
+</html>
